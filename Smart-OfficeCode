@@ -1,0 +1,354 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <LiquidCrystal_I2C.h>
+#include "DHT.h"
+#include <WiFi.h>
+#include <FirebaseESP32.h>
+#include "time.h"
+
+
+int firePin = 16; // KY-026 analog interface 
+int fire;
+#define buzzer 15
+#define ventilateur 2
+#define ALARM 25
+#define ledr 14                      
+#define ledv 27
+#define DHTPIN 13  
+#define DHTTYPE DHT11   // DHT 11
+#define FIREBASE_HOST "smart-office-f6f56-default-rtdb.firebaseio.com"
+#define FIREBASE_AUTH "hJ9xEx0v6QQNNAKtmisWiP5lSAkvaijGgTXfl0CS"
+#define WIFI_SSID "AndroidAPC36D"
+#define WIFI_PASSWORD "11111111"
+int a=0;
+int m=0; 
+int ah=0;
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 0;
+const int   daylightOffset_sec = 3600;
+//Define FirebaseESP32 data object
+FirebaseData firebaseData;
+FirebaseJson json;
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+float temp ;
+// ecrire ici le numero UID du bon badge
+const byte bonUID1[4] = {140, 101, 37, 217};
+const byte bonUID2[4] = {38, 200, 202, 18};
+const byte bonUID3[4] = {254, 53, 119, 195};
+//
+
+const int pinRST = 0; // pin RST du module RC522
+const int pinSDA = 5; // pin SDA du module RC522
+MFRC522 rfid(pinSDA, pinRST);
+
+
+
+//***************** void setup ******************
+void setup()
+{
+  pinMode(firePin, INPUT);
+  Serial.begin(9600); 
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+  Firebase.reconnectWiFi(true);
+///**************** TIIME*********************
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  Serial.println("Time variables");
+  char timeNOW[10];
+  strftime(timeNOW,3, "%H:%M", &timeinfo);
+  
+  Serial.println(timeNOW);
+  Serial.println();
+  SPI.begin();
+  rfid.PCD_Init();
+  rfid.PCD_DumpVersionToSerial();
+  dht.begin();
+  pinMode(ledr, OUTPUT);
+  pinMode(ledv, OUTPUT);
+  lcd.begin();
+  pinMode(ALARM, OUTPUT);
+    for(int j=0;j<=3;j++)
+    {
+      digitalWrite(ALARM,j);
+      delay(10);
+      digitalWrite(ALARM,LOW);
+    }
+    pinMode(buzzer, OUTPUT);
+    digitalWrite(buzzer, LOW);
+}
+
+ // ****************** VOID LOOP **************************
+void loop()
+{
+   struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  Serial.println("Time variables");
+  char timeNOW[10];
+  strftime(timeNOW,10, "%H:%M:%S", &timeinfo);  
+  digitalWrite(ledr,HIGH);
+  delay(50);
+  digitalWrite(ledr,LOW);
+  
+  
+temp = dht.readTemperature();
+    lcd.begin();
+    lcd.setCursor(0,0);
+    lcd.print("Hello!");
+    lcd.setCursor(8,0); 
+    lcd.print(temp); 
+    lcd.setCursor(14,0);
+    lcd.print("C");
+    lcd.setCursor(0,1); 
+    lcd.print("***");
+    lcd.setCursor(4,1);
+    lcd.print(timeNOW);
+    lcd.setCursor(13,1);
+     lcd.print("***"); 
+
+int refus1 = 0; 
+int refus2 = 0;
+int refus3 = 0;// quand cette variable n'est pas nulle, c'est que le code est refusé
+ if (rfid.PICC_IsNewCardPresent()) // on a dédecté un tag
+{
+  if (rfid.PICC_ReadCardSerial()) // on a lu avec succès son contenu
+  { 
+    for (byte i = 0; i < rfid.uid.size; i++) // comparaison avec le bon UID
+    {
+    if (rfid.uid.uidByte[i] != bonUID1[i]) {
+    refus1++;
+    
+    }
+    if (rfid.uid.uidByte[i] != bonUID2[i]){
+      refus2++;
+    }
+    if (rfid.uid.uidByte[i] != bonUID2[i]){
+      refus2++;
+    }
+      if (rfid.uid.uidByte[i] != bonUID3[i]){
+      refus3++;
+ 
+  }
+ if (refus1 == 0) // UID accepté
+  {
+       a=a+1;
+      // allume LED verte et active relais pendant 3 secondes
+      Serial.println(F("ID NAME: AMINE  | ID= 140 101 37 217 "));
+      Serial.println();
+     
+        if(a==1){
+            struct tm timeinfo;
+            if(!getLocalTime(&timeinfo)){
+              Serial.println("Failed to obtain time");
+              return;
+            }
+            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+            char timeNOW[6];
+            strftime(timeNOW,6, "%H.%M", &timeinfo);
+            Serial.println("AMINE coming at:");
+             float timen=atof(timeNOW);
+//            float timen= char.toFloat(timeNOW[5]);
+            json.set("Amine/come",timen);
+            
+            Serial.print(timeNOW);
+          
+             
+            Serial.println();
+            a=a+1;
+        }
+        
+        else if(a==3){
+            struct tm timeinfo;
+            if(!getLocalTime(&timeinfo)){
+              Serial.println("Failed to obtain time");
+              return;
+            }
+            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+            char timeNOW[6];
+            strftime(timeNOW,6, "%H.%M", &timeinfo);
+            Serial.println("AMINE exit at:");
+            Serial.print(timeNOW);
+              float timen=atof(timeNOW);
+//            float timen= char.toFloat(timeNOW[5]);
+            json.set("Amine/exit",timen);     
+            Serial.println();
+        }
+      Serial.println(a);
+      lcd.begin();
+      lcd.print("welcome Mr Amine !");  
+      json.set("Amine/Present","P");
+ // ****** ecrire dans FIREBASE ***** //         amine est présent
+      digitalWrite(ledr,LOW);
+      digitalWrite(ledv,HIGH);
+      digitalWrite(ALARM,HIGH);
+      delay(200);
+      digitalWrite(ALARM,LOW); 
+      delay(500);
+      digitalWrite(ledv,LOW);
+      digitalWrite(ledr,HIGH);
+     
+     
+     
+ 
+  return;
+  }
+  if (refus2 == 0) // UID accepté
+  {
+            m=m+1;
+          // allume LED verte et active relais pendant 3 secondes
+             Serial.println(F("ID NAME:  |ID= 38 200 202 18"));
+             Serial.println();  
+             
+              if(m==1){
+                struct tm timeinfo;
+                if(!getLocalTime(&timeinfo)){
+                  Serial.println("Failed to obtain time");
+                  return;
+                }
+                Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+                char timeNOW[6];
+                strftime(timeNOW,6, "%H.%M", &timeinfo);
+                Serial.println("Mahdi coming at:");
+                 float timem=atof(timeNOW);
+    //            float timen= char.toFloat(timeNOW[5]);
+                json.set("Mahdi/come",timem);
+                Serial.print(timeNOW);
+                Serial.println();
+                m=m+1;
+        }
+        
+        else if(m==3){
+            struct tm timeinfo;
+            if(!getLocalTime(&timeinfo)){
+              Serial.println("Failed to obtain time");
+              return;
+            }
+            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+            char timeNOW[6];
+            strftime(timeNOW,6, "%H.%M", &timeinfo);
+            Serial.println("Mahdi exit at:");
+            Serial.print(timeNOW);
+              float timem=atof(timeNOW);
+//            float timen= char.toFloat(timeNOW[5]);
+            json.set("Mahdi/exit",timem);     
+            Serial.println();
+        }
+             lcd.begin();
+             lcd.print("Welcome Mr Mahdi!"); 
+             json.set("Mahdi/Present","P");
+             digitalWrite(ALARM,1);
+             digitalWrite(ledr,LOW);
+             digitalWrite(ledv,HIGH);
+             delay(200);
+             digitalWrite(ALARM,LOW);
+             delay(500);
+             digitalWrite(ledv,LOW);
+             digitalWrite(ledr,HIGH);
+
+              return;
+}
+
+    if (refus3 == 0) // UID accepté
+  {
+       ah=ah+1;
+      // allume LED verte et active relais pendant 3 secondes
+      Serial.println(F("ID NAME: Ahmed  | ID= 140 101 37 217 "));
+      Serial.println();
+      lcd.begin();
+      lcd.setCursor(0,0);
+     
+        if(ah==1){
+            struct tm timeinfo;
+            if(!getLocalTime(&timeinfo)){
+              Serial.println("Failed to obtain time");
+              return;
+            }
+            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+            char timeNOW[6];
+            strftime(timeNOW,6, "%H.%M", &timeinfo);
+            Serial.println("ahmed coming at:");
+             float timen=atof(timeNOW);
+            json.set("Ahmed/come",timen);
+            Serial.print(timeNOW); 
+            Serial.println();
+            ah=ah+1;
+        }
+        
+        else if(ah==3){
+            struct tm timeinfo;
+            if(!getLocalTime(&timeinfo)){
+              Serial.println("Failed to obtain time");
+              return;
+            }
+            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+            char timeNOW[6];
+            strftime(timeNOW,6, "%H.%M", &timeinfo);
+            Serial.println("ahmed exit at:");
+            Serial.print(timeNOW);
+              float timen=atof(timeNOW);
+//            float timen= char.toFloat(timeNOW[5]);
+            json.set("Ahmed/exit",timen);     
+            Serial.println();
+        }
+      Serial.println(a);
+      lcd.print("welcome Mr Ahmed !");  
+      json.set("Ahmed/Present","P");
+ // ****** ecrire dans FIREBASE ***** //         amine est présent
+      digitalWrite(ALARM,1);
+      digitalWrite(ledr,LOW);
+      digitalWrite(ledv,HIGH);
+      delay(200);
+      digitalWrite(ALARM,LOW); 
+      delay(500);
+      digitalWrite(ledv,LOW);
+      digitalWrite(ledr,HIGH);
+  return;
+  }
+
+
+  // Halt PICC
+  rfid.PICC_HaltA();
+
+  // Stop encryption on PCD
+  rfid.PCD_StopCrypto1();
+     
+  
+    }
+  }
+ }
+ json.set("/temp",temp);
+  Firebase.updateNode(firebaseData,"/Employee",json);
+  fire = digitalRead(firePin);
+    if (fire==1){ // le capteur KY-026 détecte un feu
+    digitalWrite(buzzer, HIGH); // LED s’allume et le buzzer sonne
+    } else { // sinon
+    digitalWrite(buzzer, LOW); // LED s’éteint et le buzzer s’arrête de sonner
+    }
+   if (temp>45) {  
+    digitalWrite(ventilateur,HIGH);
+     }
+  else 
+  {digitalWrite(ventilateur,LOW);}
+  }
