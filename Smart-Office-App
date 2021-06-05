@@ -1,0 +1,470 @@
+///////////////////////////////////////////////////////// Page Main Source Code //////////////////////////////////////////////////////////////////////////
+
+package com.example.essai;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        getSupportActionBar().hide();
+        EditText login = (EditText) findViewById(R.id.pass);
+        Button btn = (Button) findViewById(R.id.btn);
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if ((login.getText().toString().equals("2021"))) {
+                    Toast.makeText(getApplicationContext(), "Access Valid", Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(MainActivity.this, page2.class);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(getApplicationContext(), "Invalide Key", Toast.LENGTH_LONG).show();
+                }
+}
+        });
+    }
+}
+
+///////////////////////////////////////////////////////// Page 2 Source Code //////////////////////////////////////////////////////////////////////////
+
+
+package com.example.essai;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.TextView;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+public class page2 extends AppCompatActivity {
+    private DatabaseReference rootDatabaseref;
+    private TextView textView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_page2);
+        getSupportActionBar().hide();
+
+        textView = findViewById(R.id.temp);
+        rootDatabaseref = FirebaseDatabase.getInstance().getReference().child("Employee").child("temp");
+        rootDatabaseref.addValueEventListener(new ValueEventListener() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    String data = snapshot.getValue().toString();
+                    int pos = data.indexOf(".");
+                    data = data.substring(0,(pos+2));
+                    String temp = data.concat("°C");
+                    textView.setText(temp);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+        ImageButton imgemp=(ImageButton) findViewById(R.id.imgemp);
+        ImageButton imglight=(ImageButton) findViewById(R.id.light);
+        imgemp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent=new Intent(page2.this,employee.class);
+                startActivity(intent);
+            }
+        });
+        imglight.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent=new Intent(page2.this,light.class);
+                startActivity(intent);
+            }
+        });
+    }
+}
+
+
+
+
+///////////////////////////////////////////////////////// Employee Page Source Code //////////////////////////////////////////////////////////////////////////
+
+package com.example.essai;
+
+import androidx.annotation.ColorInt;
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+public class employee extends AppCompatActivity {
+    private DatabaseReference rootDatabaseref2;
+    private DatabaseReference rootDatabaseref;
+    private DatabaseReference rootDatabaseref3;
+    private DatabaseReference come3;
+    private DatabaseReference come2;
+    private DatabaseReference come;
+    private TextView textView2;
+    private TextView textView;
+    private TextView textView3;
+    private DatabaseReference exit3;
+    private DatabaseReference exit2;
+    private DatabaseReference exit;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_employee);
+        getSupportActionBar().hide();
+        Calendar calendar = Calendar.getInstance();
+        String currentDate = DateFormat.getDateInstance(DateFormat.DEFAULT).format(calendar.getTime());
+        TextView date=findViewById(R.id.date);
+        date.setText(currentDate);
+
+
+        textView = findViewById(R.id.pre);
+        rootDatabaseref = FirebaseDatabase.getInstance().getReference().child("Employee").child("Mahdi").child("Present");
+        rootDatabaseref.addValueEventListener(new ValueEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    String data = snapshot.getValue().toString();
+                    textView.setText(data);
+                    if (data.equals("P")){
+                        textView.setTextColor(Color.parseColor("#24b535"));
+                        //TextView time = findViewById(R.id.time);
+                        //@SuppressLint("SimpleDateFormat") SimpleDateFormat simpleDateFormat = new SimpleDateFormat("hh:mm");
+                        //String dateTime = simpleDateFormat.format(calendar.getTime());
+                        //time.setText(dateTime);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+        come = FirebaseDatabase.getInstance().getReference().child("Employee").child("Ahmed").child("come");
+        come.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    TextView time = findViewById(R.id.time2);
+                    String timech = snapshot.getValue().toString();
+                    String strNew = timech.replace(".", ":");
+                    int pos = strNew.indexOf(":");
+                    strNew = strNew.substring(0,(pos+3));
+                    time.setText(strNew);
+                }
+                else {
+                    TextView time = findViewById(R.id.time2);
+                    time.setText("-- : --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+        exit = FirebaseDatabase.getInstance().getReference().child("Employee").child("Ahmed").child("exit");
+        exit.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    TextView exit = findViewById(R.id.ts2);
+                    String timech = snapshot.getValue().toString();
+                    String strNew = timech.replace(".", ":");
+                    int pos = strNew.indexOf(":");
+                    strNew = strNew.substring(0,(pos+3));
+                    exit.setText(strNew);
+                }
+                else {
+                    TextView exit = findViewById(R.id.ts2);
+                    exit.setText("-- : --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+
+        textView2 = findViewById(R.id.pre2);
+        rootDatabaseref2 = FirebaseDatabase.getInstance().getReference().child("Employee").child("Ahmed").child("Present");
+        rootDatabaseref2.addValueEventListener(new ValueEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot2) {
+                if (snapshot2.exists()){
+                    String data2 = snapshot2.getValue().toString();
+                    textView2.setText(data2);
+                    if (data2.equals("P")){
+                        textView2.setTextColor(Color.parseColor("#24b535"));
+                        //TextView time2 = findViewById(R.id.time2);
+                        //@SuppressLint("SimpleDateFormat") SimpleDateFormat simpleDateFormat2 = new SimpleDateFormat("hh:mm");
+                        //String dateTime2 = simpleDateFormat2.format(calendar.getTime());
+                        //time2.setText(dateTime2);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error2) {
+
+            }
+        });
+
+
+
+
+        come2 = FirebaseDatabase.getInstance().getReference().child("Employee").child("Mahdi").child("come");
+        come2.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    TextView time2 = findViewById(R.id.time);
+                    String timech2 = snapshot.getValue().toString();
+                    String strNew = timech2.replace(".", ":");
+                    int pos = strNew.indexOf(":");
+                    strNew = strNew.substring(0,(pos+3));
+                    time2.setText(strNew);
+                }else {
+                    TextView time2 = findViewById(R.id.time);
+                    time2.setText("-- : --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+        exit2 = FirebaseDatabase.getInstance().getReference().child("Employee").child("Mahdi").child("exit");
+        exit2.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    TextView exit2 = findViewById(R.id.ts);
+                    String timech = snapshot.getValue().toString();
+                    String strNew = timech.replace(".", ":");
+                    int pos = strNew.indexOf(":");
+                    strNew = strNew.substring(0,(pos+3));
+                    exit2.setText(strNew);
+                }
+                else {
+                    TextView exit2 = findViewById(R.id.ts);
+                    exit2.setText("-- : --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+        textView3 = findViewById(R.id.pre3);
+        rootDatabaseref3 = FirebaseDatabase.getInstance().getReference().child("Employee").child("Amine").child("Present");
+        rootDatabaseref3.addValueEventListener(new ValueEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot3) {
+                if (snapshot3.exists()) {
+                    String data3 = snapshot3.getValue().toString();
+                    textView3.setText(data3);
+                    if (data3.equals("P")) {
+                        textView3.setTextColor(Color.parseColor("#24b535"));
+                        //TextView time3 = findViewById(R.id.time3);
+                        //@SuppressLint("SimpleDateFormat") SimpleDateFormat simpleDateFormat3 = new SimpleDateFormat("hh:mm");
+                       // String dateTime3 = simpleDateFormat3.format(calendar.getTime());
+                        //time3.setText(dateTime3);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error3) {
+
+            }
+        });
+
+
+
+        come3 = FirebaseDatabase.getInstance().getReference().child("Employee").child("Amine").child("come");
+        come3.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    TextView time3 = findViewById(R.id.time3);
+                    String timech3 = snapshot.getValue().toString();
+                    String strNew = timech3.replace(".", ":");
+                    int pos = strNew.indexOf(":");
+                    strNew = strNew.substring(0,(pos+3));
+                    time3.setText(strNew);
+                }
+                else {
+                    TextView time3 = findViewById(R.id.time3);
+                    time3.setText("-- : --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+        exit3 = FirebaseDatabase.getInstance().getReference().child("Employee").child("Amine").child("exit");
+        exit3.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    TextView exit3 = findViewById(R.id.ts3);
+                    String timech = snapshot.getValue().toString();
+                    String strNew = timech.replace(".", ":");
+                    int pos = strNew.indexOf(":");
+                    strNew = strNew.substring(0,(pos+3));
+                    exit3.setText(strNew);
+                }else {
+                    TextView exit3 = findViewById(R.id.ts3);
+                    exit3.setText("-- : --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+    }
+}
+
+
+///////////////////////////////////////////////////////// Light Control Page Source Code //////////////////////////////////////////////////////////////////////////
+
+package com.example.essai;
+
+import android.annotation.SuppressLint;
+import android.media.Image;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+public class light extends AppCompatActivity {
+  Button on,off;
+    ImageView image;
+    TextView textView;
+    @SuppressLint("SetTextI18n")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_light);
+        getSupportActionBar().hide();
+        // Write a message to the database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef;
+        myRef = database.getReference().child("light");
+        on = (Button) findViewById (R.id.on) ;
+        off = (Button) findViewById (R.id.off) ;
+        image = (ImageView) findViewById(R.id.imglight);
+        textView = (TextView) findViewById(R.id.lightstatus);
+
+       on.setOnClickListener(v -> myRef.setValue("ON"));
+       off.setOnClickListener(v -> myRef.setValue("OFF"));
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String data = snapshot.getValue().toString();
+                    textView.setText(data);
+                    if (data.equals("ON")){
+                        image.setImageResource(R.drawable.lighton);
+                    }else image.setImageResource(R.drawable.lightoff);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
+}
